@@ -17,7 +17,7 @@ A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN 
 - `RTR-BR` — branch router, sole gateway for the branch LAN
 - `SW-BR` — access switch for Branch Staff (VLAN 40)
 
-**Internet edge (added)**
+**Internet edge **
 - `RTR-ISP` — simulated internet/ISP, outside FW-HQ
 - `FW-HQ` — Cisco ASA 5505 perimeter firewall, NAT + default-deny inbound
 - `SRV-IT` — internal file server on VLAN 20 (IT), FTP-based local storage
