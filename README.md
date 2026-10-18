@@ -1,7 +1,10 @@
 # Two-site enterprise network — Packet Tracer portfolio project
 
-A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN segmentation, redundant Layer 3 routing, dynamic routing, and basic network hardening — the core skills behind a network technician / junior network security role. It extends hands-on experience from internships at Tunisie Telecom (switch/router configuration, ADSL/VDSL/fiber access provisioning) and CNRPS Tunis (security-focused ticket handling, log and firewall verification with the SOC team).
 ![Network topology](topology-view.png)
+
+
+A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN segmentation, redundant Layer 3 routing, dynamic routing, and basic network hardening — the core skills behind a network technician / junior network security role. It extends hands-on experience from internships at Tunisie Telecom (switch/router configuration, ADSL/VDSL/fiber access provisioning) and CNRPS Tunis (security-focused ticket handling, log and firewall verification with the SOC team).
+
 ## Topology
 
 **HQ site**
