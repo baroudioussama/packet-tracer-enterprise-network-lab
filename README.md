@@ -2,7 +2,6 @@
 
 ![Network topology](topology-view.png)
 
-
 A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN segmentation, redundant Layer 3 routing, dynamic routing, and basic network hardening — the core skills behind a network technician / junior network security role. It extends hands-on experience from internships at Tunisie Telecom (switch/router configuration, ADSL/VDSL/fiber access provisioning) and CNRPS Tunis (security-focused ticket handling, log and firewall verification with the SOC team).
 
 ## Topology
@@ -71,7 +70,7 @@ Two PCs on Staff (PC-Staff1/2) let you test something port security alone can't 
 
 1. Place the devices as named above and cable them per the topology (see the design diagram from the planning conversation).
 2. For each device, open its CLI tab, enter global config mode (`enable` → `configure terminal`), and paste the matching file's contents (everything between `hostname` and `end`).
-3. Bring devices up in this order so dependent protocols converge cleanly: access switches → core switches → RTR-HQ → RTR-BR → FW-HQ → RTR-ISP. Remember RTR-HQ needs a module added for Gi0/3 before you can configure the new uplink (Physical view, power off first).
+3. Bring devices up in this order so dependent protocols converge cleanly: access switches → core switches → RTR-HQ → RTR-BR → FW-HQ → RTR-ISP. Remember RTR-HQ needs a module added before you can configure the new uplink (Physical view, power off first) — it comes up as `FastEthernet0/3/0`, not a Gig interface, depending on which module you use.
 4. Verify with `show ip ospf neighbor` (should show full adjacencies), `show standby brief` (Core1 active, Core2 standby), and ping tests across VLANs to confirm the ACLs behave as designed.
 5. Save each device's final `show running-config` output back into its file here before you write it up for GitHub.
 
