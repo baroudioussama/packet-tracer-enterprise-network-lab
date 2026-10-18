@@ -1,7 +1,5 @@
 # Two-site enterprise network — Packet Tracer portfolio project
 
-![Network topology](topology-view.png)
-
 A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN segmentation, redundant Layer 3 routing, dynamic routing, and basic network hardening — the core skills behind a network technician / junior network security role. It extends hands-on experience from internships at Tunisie Telecom (switch/router configuration, ADSL/VDSL/fiber access provisioning) and CNRPS Tunis (security-focused ticket handling, log and firewall verification with the SOC team).
 
 ## Topology
@@ -15,6 +13,11 @@ A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN 
 **Branch site**
 - `RTR-BR` — branch router, sole gateway for the branch LAN
 - `SW-BR` — access switch for Branch Staff (VLAN 40)
+
+**Internet edge (added)**
+- `RTR-ISP` — simulated internet/ISP, outside FW-HQ
+- `FW-HQ` — Cisco ASA 5505 perimeter firewall, NAT + default-deny inbound
+- `SRV-IT` — internal file server on VLAN 20 (IT), FTP-based local storage
 
 ## IP addressing plan
 
@@ -30,6 +33,10 @@ A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN 
 | RTR-HQ ↔ RTR-BR (WAN) | 10.0.0.0/30 |
 | RTR-HQ ↔ SW-CORE1 | 10.0.1.0/30 |
 | RTR-HQ ↔ SW-CORE2 | 10.0.2.0/30 |
+| RTR-HQ ↔ FW-HQ (inside) | 10.0.5.0/30 |
+| FW-HQ (outside) ↔ RTR-ISP | 203.0.113.0/30 |
+
+`SRV-IT` sits inside the existing 192.168.20.0/24 (IT) range at .20 — no new subnet needed, it's just another host on that VLAN.
 
 ## Design decisions
 
@@ -41,6 +48,7 @@ A simulated two-site enterprise network (HQ + Branch) built to demonstrate VLAN 
   - Every access port has port security (max 2 MAC addresses, sticky learning, shuts the port down on violation) plus `portfast` + `bpduguard` since they're host-facing edge ports.
   - Management access is SSH-only with local AAA (`login local`) — no Telnet anywhere.
   - Spanning-tree root is pinned to match the HSRP roles (`SW-CORE1` root primary, `SW-CORE2` root secondary) — without this, STP could pick a root independently of which core is the active gateway, sending traffic on an extra unnecessary hop between the two cores on every packet.
+- **Perimeter firewall — ASA security levels, not just ACLs.** `FW-HQ` sits between `RTR-HQ` and the simulated internet (`RTR-ISP`). Inside is security-level 100, outside is 0 — the ASA denies anything from a lower level to a higher one by default, so the entire internal network (including `SRV-IT`) is unreachable from outside with zero explicit deny rules needed. Internal hosts reach the internet via PAT (`nat (inside,outside) dynamic interface`), and `RTR-HQ`'s existing `default-information originate` (set up from the first build, unused until now) propagates the new default route to every other router automatically.
 
 ## Test PCs
 
@@ -54,13 +62,13 @@ Add at least one PC per VLAN so you can actually verify the design instead of ju
 | PC-Guest1 | 30 | SW-ACC1 Fa0/13 | 192.168.30.11/24 | 192.168.30.1 |
 | PC-Branch1 | 40 | SW-BR Fa0/1 | 192.168.40.11/24 | 192.168.40.1 |
 
-Two PCs on Staff (PC-Staff1/2) let you test something port security alone can't show — plug a third device into one of those ports and watch it get `err-disabled`. A server on the IT VLAN (e.g. `SRV-IT` at 192.168.20.20, running the built-in HTTP service) is also worth adding — it gives Branch something real to reach for the Branch→IT ACL test, and something for Guest to be denied when hitting the IT ACL.
+Two PCs on Staff (PC-Staff1/2) let you test something port security alone can't show — plug a third device into one of those ports and watch it get `err-disabled`. `SRV-IT` (192.168.20.20, FTP-based local storage — see `10-SRV-IT-settings.txt`) gives Branch something real to reach for the Branch→IT ACL test, something for Guest to be denied when hitting the IT ACL, and something to confirm is unreachable from `RTR-ISP` once the firewall is in place.
 
 ## How to use these configs in Packet Tracer
 
 1. Place the devices as named above and cable them per the topology (see the design diagram from the planning conversation).
 2. For each device, open its CLI tab, enter global config mode (`enable` → `configure terminal`), and paste the matching file's contents (everything between `hostname` and `end`).
-3. Bring devices up in this order so dependent protocols converge cleanly: access switches → core switches → RTR-HQ → RTR-BR.
+3. Bring devices up in this order so dependent protocols converge cleanly: access switches → core switches → RTR-HQ → RTR-BR → FW-HQ → RTR-ISP. Remember RTR-HQ needs a module added for Gi0/3 before you can configure the new uplink (Physical view, power off first).
 4. Verify with `show ip ospf neighbor` (should show full adjacencies), `show standby brief` (Core1 active, Core2 standby), and ping tests across VLANs to confirm the ACLs behave as designed.
 5. Save each device's final `show running-config` output back into its file here before you write it up for GitHub.
 
@@ -79,6 +87,8 @@ Guest and Branch show ❌ in both directions even though the ACLs were only writ
 
 If any of these don't match what you see in Packet Tracer, check `show ip ospf neighbor` and `show ip route` before assuming the ACL is wrong — most connectivity failures at this stage turn out to be routing, not filtering.
 
+**Firewall validation:** from any internal host, confirm you can reach `RTR-ISP`'s loopback (198.51.100.1) — proves NAT and the default route work. Then try pinging `SRV-IT` (192.168.20.20) *from* `RTR-ISP` — this should fail. That failure is the ASA's default-deny doing exactly what it's supposed to; screenshot it the same way you documented the Guest/Branch isolation earlier. It's a negative result, but it's the one that actually proves the firewall is enforcing anything.
+
 ## Files
 
 | File | Device |
@@ -90,6 +100,9 @@ If any of these don't match what you see in Packet Tracer, check `show ip ospf n
 | `05-SW-ACC1.txt` | HQ access switch (Staff + Guest) |
 | `06-SW-ACC2.txt` | HQ access switch (IT) |
 | `07-SW-BR.txt` | Branch access switch |
+| `08-RTR-ISP.txt` | Simulated internet / ISP edge |
+| `09-FW-HQ-ASA.txt` | Perimeter firewall (Cisco ASA 5505) |
+| `10-SRV-IT-settings.txt` | Internal file server — GUI settings reference (not CLI) |
 
 ## Optional next steps
 
